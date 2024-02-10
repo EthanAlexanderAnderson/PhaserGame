@@ -50,14 +50,21 @@ main {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 500px;
-  height: 500px;
+  width: 1000px;
+  height: 1000px;
   background-color: var(--primaryColor);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   z-index: 2;
+  font-size: 2em;
+}
+
+button {
+  font-size: 1em;
+  margin: 1em;
+  padding: 1em;
 }
 
 .gameUI *{
