@@ -19,17 +19,14 @@ class GameScene extends Phaser.Scene {
     this.cursor
     this.target
     this.points = 0;
-    //this.timerpoints = 0;
     this.lives = 3;
-    this.textScore
     this.textTime
-    //this.textLives
     this.timedEvent
     this.timeElasped = 0
     this.coinSFX
     this.bgMusic
     this.emitterBanana
-    this.emitterBomb
+    this.emitterCoconut
     this.moveCooldown
     this.spawnLocations = [300, 700];
     this.monkeyleft = 375;
@@ -38,20 +35,44 @@ class GameScene extends Phaser.Scene {
     this.started = false;
     this.skylist = [];
     this.treelist = [];
+    this.frame = 1;
+    this.oldtime = 0;
+    this.counter = 0;
   }
   // load assets
   preload(){
     // images
-    this.load.image('bg', '/assets/bg.png');
-    this.load.image('bglong', '/assets/bg2.png');
-    this.load.image('tree', '/assets/Log.png');
-    this.load.image('sky', '/assets/sky.png');
-    this.load.image('monkey', '/assets/monkey.png');
-    this.load.image('banana', '/assets/banana.png');
-    this.load.image('bomb', '/assets/bomb.png');
-    this.load.image('anger', '/assets/anger.png');
-    this.load.image('heart_full', '/assets/heart_full.png');
-    this.load.image('heart_empty', '/assets/heart_empty.png');
+    this.load.image('tree', './assets/Log.png');
+    this.load.image('sky', './assets/sky.png');
+    this.load.image('monkey', './assets/monkey.png');
+    this.load.image('banana', './assets/banana.png');
+    this.load.image('coconut', './assets/coconut.png');
+    this.load.image('anger', './assets/anger.png');
+    this.load.image('heart', './assets/heart.png');
+
+    // load monkey animation frame images
+    this.load.image('F1', './assets/F1.png');
+    this.load.image('F2', './assets/F2.png');
+    this.load.image('F3', './assets/F3.png');
+    this.load.image('F4', './assets/F4.png');
+
+    this.load.image('H1', './assets/H1.png');
+    this.load.image('H2', './assets/H2.png');
+    this.load.image('H3', './assets/H3.png');
+    this.load.image('H4', './assets/H4.png');
+
+    // custom number font images
+    this.load.image('0', './assets/0.png');
+    this.load.image('1', './assets/1.png');
+    this.load.image('2', './assets/2.png');
+    this.load.image('3', './assets/3.png');
+    this.load.image('4', './assets/4.png');
+    this.load.image('5', './assets/5.png');
+    this.load.image('6', './assets/6.png');
+    this.load.image('7', './assets/7.png');
+    this.load.image('8', './assets/8.png');
+    this.load.image('9', './assets/9.png');
+
     // audio assets
     this.load.audio('coin', '/assets/coin.mp3');
     this.load.audio('bgMusic', '/assets/bgMusic.mp3');
@@ -68,8 +89,8 @@ class GameScene extends Phaser.Scene {
     this.bgMusic.volume = 0.1;
 
     //background
-
     this.bg = this.add.image(0, -9010, 'bglong').setOrigin(0, 0).setDisplaySize(1000, 10000);
+
     // sky
     for (var i = 0; i < 50; i++) {
       let sky = this.add.image(500, 695 * (-i+1), 'sky').setDisplaySize(1000, 700);
@@ -77,8 +98,8 @@ class GameScene extends Phaser.Scene {
     }
 
     // player
-
-    this.player = this.physics.add.image(this.monkeyleft, 750, 'monkey').setDisplaySize(500 , 500);
+    this.player = this.physics.add.image(this.monkeyleft, 750, 'F1').setDisplaySize(500 , 500);
+    this.player.setTexture('F1');
     this.player.setImmovable(true);
     this.player.body.setAllowGravity(false);
     this.player.setCollideWorldBounds(true);
@@ -90,21 +111,22 @@ class GameScene extends Phaser.Scene {
       this.treelist.push(tree);
     }
 
-    // banana / bomb
+    // player hands 
+    this.hands = this.add.image(this.monkeyleft, 750, 'H1').setDisplaySize(500 , 500);
+
+    // banana / coconut
 
     this.target = this.physics.add.image(0, -100, 'banana').setDisplaySize(100, 100);
     this.target.x = this.monkeyleft;
     this.target.value = 10;
 
-    this.physics.add.overlap(this.player, this.target, this.targetHit, null, this);
+    this.physics.add.overlap(this.player, this.target, this.TargetHit, null, this);
 
     this.cursor = this.input.keyboard.createCursorKeys();
 
-    this.textScore = this.add.text(10, 10, 'Score: 0', { fontSize: '40px', fill: '#000' });
-    //this.textTime = this.add.text(10, 60, 'Timer: 0', { fontSize: '40px', fill: '#000' });
-    //this.textLives = this.add.text(10, 110, 'Lives: 3', { fontSize: '40px', fill: '#000' });
+    this.heartImageList = [];
 
-    this.heartlist = [];
+    this.scoreImageList = [];
   
     this.startTime = 0;
 
@@ -120,7 +142,7 @@ class GameScene extends Phaser.Scene {
     });
     this.emitterBanana.startFollow(this.player);
 
-    this.emitterBomb = this.add.particles(85, -50, 'anger',{
+    this.emitterCoconut = this.add.particles(85, -50, 'anger',{
       speed: 200,
       gravityY: 300,
       scale: 0.1,
@@ -128,9 +150,9 @@ class GameScene extends Phaser.Scene {
       emitting: false,
       lifespan: 4000,
     });
-    this.emitterBomb.startFollow(this.player);
+    this.emitterCoconut.startFollow(this.player);
 
-    this.heartdisplay();
+    this.UpdateHeartDisplay();
 
     const swipe = new Swipe(this, {
       swipeDetectedCallback: (direction) => {
@@ -144,20 +166,14 @@ class GameScene extends Phaser.Scene {
             //angle = -90;
             break;
           case 'RIGHT':
-            this.move(false);
+            this.Move(false);
             break;
           case 'LEFT':
-            this.move(true);
+            this.Move(true);
             break;
           default:
             break;
         }
-        this.add.tween({
-          targets: arrow,
-          angle: angle,
-          ease: Phaser.Math.Easing.Sine.Out,
-          duration: 500,
-        });
       },
     });
   }
@@ -171,9 +187,9 @@ class GameScene extends Phaser.Scene {
     }
     // update timer + score
     this.timeElasped = Math.floor(this.time.now / 1000) - this.startTime;
-    //this.textTime.setText('Timer: ' + Math.round(this.timeElasped));
     speedDown = 300 + (this.timeElasped * 10);
-    this.textScore.setText('Score: ' + Math.floor((this.points + (Math.round(this.timeElasped)*0.001*speedDown))));
+    let score = Math.floor((this.points + (Math.round(this.timeElasped)*0.001*speedDown)));
+    this.DisplayScore(score);
     // move bg
     this.bg.y += speedDown / 1000;
     for (var i = 0; i < this.skylist.length; i++) {
@@ -184,7 +200,7 @@ class GameScene extends Phaser.Scene {
     }
 
     if (this.target.y > 1000) {
-      this.targetRespawn();
+      this.TargetRespawn();
     } 
 
     const{ left, right } = this.cursor;
@@ -196,49 +212,55 @@ class GameScene extends Phaser.Scene {
     else if(right.isDown && !this.moveCooldown){
       this.moveCooldown = this.time.delayedCall(100, this.move, [false], this);
     }
+    // animation
+    this.counter--;
+    if(this.counter < speedDown/200){
+      this.ChangeFrame();
+      this.counter = 40;
+    }
+    console.log(this.counter + " " + speedDown); 
   }
   // custom functions
-  targetHit() {
+  TargetHit() {
 
     // banana
     if (this.target.value > 0) {
       this.coinSFX.play();
       this.emitterBanana.start();
       this.points += this.target.value;
-      this.textScore.setText('Score: ' + this.points);
+      this.DisplayScore(this.points);
     } 
-    // bomb
+    // coconut
     else {
-      this.emitterBomb.start();
+      this.emitterCoconut.start();
       this.lives--;
-      //this.textLives.setText('Lives: ' + this.lives);
-      this.heartdisplay();
+      this.UpdateHeartDisplay();
     } 
 
     if (this.lives <= 0) {
-      this.gameOver();
+      this.GameOver();
     }
-    this.targetRespawn();
+    this.TargetRespawn();
   }
 
-  targetRespawn() {
+  TargetRespawn() {
     this.target.y = -100;
-    this.target.x = this.spawnLocation();
+    this.target.x = this.SpawnLocation();
     this.target.setMaxVelocity(0, speedDown);
     if (this.target.x % 2 == 0) {
       this.target.setTexture('banana');
       this.target.value = 10;
     } else {
-      this.target.setTexture('bomb');
+      this.target.setTexture('coconut');
       this.target.value = -10;
     }
   }
 
-  spawnLocation(){
+  SpawnLocation(){
     return this.spawnLocations[Math.floor(Math.random() * this.spawnLocations.length)] + Phaser.Math.Between(-50, 50);
   }
 
-  gameOver() {
+  GameOver() {
     console.log('game over');
     this.sys.game.destroy(true);
 
@@ -246,53 +268,80 @@ class GameScene extends Phaser.Scene {
     scoreSpan.innerHTML = this.points;
   }
 
-  move(isLeft){
+  Move(isLeft){
     // input left arrow
     if(isLeft){
       // invert image
       if (this.player.x == this.monkeyright){
         this.player.setFlipX(false);
+        this.hands.setFlipX(false);
         this.emitterBanana.setX(85);
-        this.emitterBomb.setX(85);
+        this.emitterCoconut.setX(85);
       }
       this.player.x = this.monkeyleft;
-      /*
-      if (this.player.x == 750){
-        this.player.x = 500;
-      } else if (this.player.x == 500){
-        this.player.x = 250;
-      }
-      */
+      this.hands.x = this.monkeyleft;
     }
     // input right arrow
     else{
       if (this.player.x == this.monkeyleft){
         this.player.setFlipX(true);
+        this.hands.setFlipX(true);
         this.emitterBanana.setX(-85);
-        this.emitterBomb.setX(-85);
+        this.emitterCoconut.setX(-85);
       }
       this.player.x = this.monkeyright;
-      /*
-      if (this.player.x == 250){
-        this.player.x = 500;
-      } else if (this.player.x == 500){
-        this.player.x = 750;
-      }
-      */
+      this.hands.x = this.monkeyright;
     }
     this.moveCooldown = null;
   }
 
-  heartdisplay() {
+  UpdateHeartDisplay() {
     // remove prior hearts
-    for (var i = 0; i < this.heartlist.length; i++) {
-      this.heartlist[i].destroy();
+    for (var i = 0; i < this.heartImageList.length; i++) {
+      this.heartImageList[i].destroy();
     }
     // set 
     for (var i = 0; i < this.lives; i++) {
-      let heart = this.add.image(900, 100 + (i * 120), 'heart_full').setDisplaySize(100, 100)
+      let heart = this.add.image(900, 100 + (i * 120), 'heart').setDisplaySize(100, 100)
       //add to list
-      this.heartlist.push(heart);
+      this.heartImageList.push(heart);
+    }
+  }
+
+  ChangeFrame() {
+    if (this.frame == 1) {
+      this.player.setTexture('F2');
+      this.hands.setTexture('H2');
+      this.frame = 2;
+    } 
+    else if (this.frame == 2) {
+      this.player.setTexture('F3');
+      this.hands.setTexture('H3');
+      this.frame = 3;
+    } 
+    else if (this.frame == 3) {
+      this.player.setTexture('F4');
+      this.hands.setTexture('H4');
+      this.frame = 4;
+    } 
+    else if (this.frame == 4) {
+      this.player.setTexture('F1');
+      this.hands.setTexture('H1');
+      this.frame = 1;
+    }
+  }
+
+  DisplayScore(score) {
+    // remove prior hearts
+    for (var i = 0; i < this.scoreImageList.length; i++) {
+      this.scoreImageList[i].destroy();
+    }
+    // set 
+    score = score.toString();
+    for (var i = 0; i < score.length; i++) {
+      let digit = this.add.image(100 + (i * 120), 100, score[i]).setDisplaySize(100, 160)
+      //add to list
+      this.scoreImageList.push(digit);
     }
   }
 }

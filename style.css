@@ -79,3 +79,8 @@ button {
 #gameOver {
   display: none;
 }
+
+#gameOverText {
+  position: absolute;
+  bottom: 1em;
+}
