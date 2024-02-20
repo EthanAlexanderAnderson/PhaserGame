@@ -41,14 +41,21 @@ class GameScene extends Phaser.Scene {
   }
   // load assets
   preload(){
-    // images
+    // sprites
     this.load.image('tree', './assets/Log.png');
-    this.load.image('sky', './assets/sky.png');
     this.load.image('monkey', './assets/monkey.png');
     this.load.image('banana', './assets/banana.png');
     this.load.image('coconut', './assets/coconut.png');
     this.load.image('anger', './assets/anger.png');
     this.load.image('heart', './assets/heart.png');
+
+    // background images
+    this.load.image('beach', './assets/beach.png');
+    this.load.image('sky_trans', './assets/sky_trans.png');
+    this.load.image('sky', './assets/sky.png');
+    this.load.image('space_trans', './assets/space_trans.png');
+    this.load.image('space_1', './assets/space_1.png');
+    this.load.image('space_2', './assets/space_2.png');
 
     // load monkey animation frame images
     this.load.image('F1', './assets/F1.png');
@@ -93,8 +100,24 @@ class GameScene extends Phaser.Scene {
 
     // sky
     for (var i = 0; i < 50; i++) {
-      let sky = this.add.image(500, 695 * (-i+1), 'sky').setDisplaySize(1000, 700);
-      this.skylist.push(sky);
+      let img = 'sky';
+      if (i == 0) {
+        img = 'beach';
+      }
+      else if (i == 1) {
+        img = 'sky_trans';
+      }
+      else if (i == 25) {
+        img = 'space_trans';
+      } 
+      else if (i > 25 && i % 2 == 0) {
+        img = 'space_1';
+      }
+      else if (i > 25 && i % 2 != 0) {
+        img = 'space_2';
+      }
+      let bg = this.add.image(500, 695 * (-i+1), img).setDisplaySize(1000, 700);
+      this.skylist.push(bg);
     }
 
     // player
