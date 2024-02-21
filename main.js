@@ -3,11 +3,14 @@ import Phaser from 'phaser'
 import { Swipe } from './swipe.js';
 
 const gameStartDiv = document.getElementById('gameStart');
-const gameStartButton = document.getElementById('start');
+const gameEasyButton = document.getElementById('easy');
+const gameMediumButton = document.getElementById('medium');
+const gameHardButton = document.getElementById('hard');
 const gameOverDiv = document.getElementById('gameOver');
 const scoreSpan = document.getElementById('score');
 
-var speedDown = 300;
+var speedDown = 200;
+var difficultyModifier = 0;
 
 class GameScene extends Phaser.Scene {
 
@@ -25,6 +28,7 @@ class GameScene extends Phaser.Scene {
     this.timeElasped = 0
     this.coinSFX
     this.bgMusic
+    this.bgMusicSpace
     this.emitterBanana
     this.emitterCoconut
     this.moveCooldown
@@ -38,6 +42,7 @@ class GameScene extends Phaser.Scene {
     this.frame = 1;
     this.oldtime = 0;
     this.counter = 0;
+    this.distanceTraveled = 0;
   }
   // load assets
   preload(){
@@ -45,6 +50,8 @@ class GameScene extends Phaser.Scene {
     this.load.image('tree', './assets/Log.png');
     this.load.image('monkey', './assets/monkey.png');
     this.load.image('banana', './assets/banana.png');
+    this.load.image('bunch', './assets/bunch.png');
+    this.load.image('pineapple', './assets/pineapple.png');
     this.load.image('coconut', './assets/coconut.png');
     this.load.image('anger', './assets/anger.png');
     this.load.image('heart', './assets/heart.png');
@@ -81,8 +88,9 @@ class GameScene extends Phaser.Scene {
     this.load.image('9', './assets/9.png');
 
     // audio assets
-    this.load.audio('coin', '/assets/coin.mp3');
-    this.load.audio('bgMusic', '/assets/bgMusic.mp3');
+    this.load.audio('coin', '/assets/sfx_BananaGet.wav');
+    this.load.audio('bgMusic', '/assets/mus_monkeytime_bpm142.wav');
+    this.load.audio('bgMusicSpace', '/assets/mus_deepspacemonkeytime_bpm142.wav');
     // set preload variables
     this.timeElasped = 0;
   }
@@ -92,13 +100,15 @@ class GameScene extends Phaser.Scene {
 
     this.coinSFX = this.sound.add('coin');
     this.bgMusic = this.sound.add('bgMusic');
+    this.bgMusicSpace = this.sound.add('bgMusicSpace');
     this.bgMusic.play();
-    this.bgMusic.volume = 0.1;
+    this.bgMusic.volume = 0.8;
+    this.bgMusic.loop = true;
+    this.bgMusicSpace.play();
+    this.bgMusicSpace.volume = 0;
+    this.bgMusicSpace.loop = true;
 
     //background
-    this.bg = this.add.image(0, -9010, 'bglong').setOrigin(0, 0).setDisplaySize(1000, 10000);
-
-    // sky
     for (var i = 0; i < 50; i++) {
       let img = 'sky';
       if (i == 0) {
@@ -158,7 +168,7 @@ class GameScene extends Phaser.Scene {
     this.emitterBanana = this.add.particles(85, -50, 'banana',{
       speed: 200,
       gravityY: 300,
-      scale: 0.1,
+      scale: 0.3,
       duration: 100,
       emitting: false,
       lifespan: 4000,
@@ -175,11 +185,20 @@ class GameScene extends Phaser.Scene {
     });
     this.emitterCoconut.startFollow(this.player);
 
+    this.emitterHeart = this.add.particles(85, -50, 'heart',{
+      speed: 200,
+      gravityY: 300,
+      scale: 0.3,
+      duration: 100,
+      emitting: false,
+      lifespan: 4000,
+    });
+    this.emitterHeart.startFollow(this.player);
+
     this.UpdateHeartDisplay();
 
     const swipe = new Swipe(this, {
       swipeDetectedCallback: (direction) => {
-        console.log(direction);
         //let angle = 0;
         switch (direction) {
           case 'DOWN':
@@ -205,22 +224,25 @@ class GameScene extends Phaser.Scene {
     // start timer
     if (!this.scene.isPaused('scene-game') && this.started == false){
       this.startTime = Math.floor(this.time.now / 1000);
-      console.log(this.startTime);
       this.started = true;
     }
     // update timer + score
     this.timeElasped = Math.floor(this.time.now / 1000) - this.startTime;
-    speedDown = 300 + (this.timeElasped * 10);
+    speedDown = 200 + (this.timeElasped * 10) + (200 * difficultyModifier);
+    // set max limit on speed
+    if (speedDown > 1500) {
+      speedDown = 1500;
+    }
     let score = Math.floor((this.points + (Math.round(this.timeElasped)*0.001*speedDown)));
     this.DisplayScore(score);
     // move bg
-    this.bg.y += speedDown / 1000;
     for (var i = 0; i < this.skylist.length; i++) {
       this.skylist[i].y += speedDown / 1000;
     }
     for (var i = 0; i < this.treelist.length; i++) {
       this.treelist[i].y += speedDown / 1000;
     }
+    this.distanceTraveled += speedDown / 1000;
 
     if (this.target.y > 1000) {
       this.TargetRespawn();
@@ -237,11 +259,15 @@ class GameScene extends Phaser.Scene {
     }
     // animation
     this.counter--;
-    if(this.counter < speedDown/200){
+    if(this.counter < speedDown / 40){
       this.ChangeFrame();
-      this.counter = 40;
+      this.counter = 80;
     }
-    console.log(this.counter + " " + speedDown); 
+    // bg music transition
+    if (this.distanceTraveled > 16000 && (this.bgMusic.volume > 0 || this.bgMusicSpace.volume < 0.8)) {
+      this.bgMusic.volume -= 0.01;
+      this.bgMusicSpace.volume += 0.01;
+    }
   }
   // custom functions
   TargetHit() {
@@ -252,13 +278,19 @@ class GameScene extends Phaser.Scene {
       this.emitterBanana.start();
       this.points += this.target.value;
       this.DisplayScore(this.points);
-    } 
+    }
     // coconut
-    else {
+    else if (this.target.value < 0) {
       this.emitterCoconut.start();
       this.lives--;
       this.UpdateHeartDisplay();
-    } 
+    }
+    // pinapple
+    else {
+      this.emitterHeart.start();
+      this.lives++;
+      this.UpdateHeartDisplay();
+    }
 
     if (this.lives <= 0) {
       this.GameOver();
@@ -270,10 +302,24 @@ class GameScene extends Phaser.Scene {
     this.target.y = -100;
     this.target.x = this.SpawnLocation();
     this.target.setMaxVelocity(0, speedDown);
-    if (this.target.x % 2 == 0) {
+    let rand = Math.random();
+
+    if ( rand <= (0.5 - 0.15 * difficultyModifier) )
+    {
       this.target.setTexture('banana');
       this.target.value = 10;
-    } else {
+    } 
+    else if ( rand <= (0.6 - 0.18 * difficultyModifier) )
+    {
+      this.target.setTexture('bunch');
+      this.target.value = 50;
+    } 
+    else if ( rand <= (0.65 - 0.2 * difficultyModifier) )
+    {
+      this.target.setTexture('pineapple');
+      this.target.value = 0;
+    } 
+    else {
       this.target.setTexture('coconut');
       this.target.value = -10;
     }
@@ -284,7 +330,6 @@ class GameScene extends Phaser.Scene {
   }
 
   GameOver() {
-    console.log('game over');
     this.sys.game.destroy(true);
 
     gameOverDiv.style.display = 'flex';
@@ -362,7 +407,7 @@ class GameScene extends Phaser.Scene {
     // set 
     score = score.toString();
     for (var i = 0; i < score.length; i++) {
-      let digit = this.add.image(100 + (i * 120), 100, score[i]).setDisplaySize(100, 160)
+      let digit = this.add.image(80 + (i * 100), 100, score[i]).setDisplaySize(80, 130)
       //add to list
       this.scoreImageList.push(digit);
     }
@@ -385,7 +430,20 @@ const config = {
 
 const game = new Phaser.Game(config)
 
-gameStartButton.addEventListener('click', () => {
+gameEasyButton.addEventListener('click', () => {
+  difficultyModifier = 0;
+  gameStartDiv.style.display = 'none';
+  game.scene.resume('scene-game');
+});
+
+gameMediumButton.addEventListener('click', () => {
+  difficultyModifier = 1;
+  gameStartDiv.style.display = 'none';
+  game.scene.resume('scene-game');
+});
+
+gameHardButton.addEventListener('click', () => {
+  difficultyModifier = 2;
   gameStartDiv.style.display = 'none';
   game.scene.resume('scene-game');
 });
