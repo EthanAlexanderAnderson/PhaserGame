@@ -2,11 +2,11 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/assets/favicon.ico" />
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Monkey Game</title>
-    <script type="module" crossorigin src="/assets/index-1gC1zPSD.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-W8Tsh1PX.css">
+    <script type="module" crossorigin src="/assets/index-U1rLChAF.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-X-zJta-1.css">
   </head>
   <body>
 
@@ -16,15 +16,17 @@
       <canvas id="gameCanvas"></canvas>
       <div id="gameStart" class="gameUI">
         <p>Monkey Game</p>
-        <button id="start">Start</button>
+        <button id="easy">Easy</button>
+        <button id="medium">Medium</button>
+        <button id="hard">Hard</button>
       </div>
       <div id="gameOver" class="gameUI">
-        <p>Game Over</p>
-        <p>Score: <span id="score"></span></p>
+        <img src="./assets/game_over.png" alt="game_over" />
+        <p id="gameOverText">Score: <span id="score"></span></p>
       </div>
     </main>
 
-    <footer>Code by Ethan Anderson --- Art by Maxwell Kelloway</footer>
+    <footer>Code by Ethan Anderson --- Art by Maxwell Kelloway --- Audio by Ethan Larose</footer>
 
   </body>
 </html>
