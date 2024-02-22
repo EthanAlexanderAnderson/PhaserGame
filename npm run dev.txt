@@ -1,1 +1,10 @@
 npm run dev
+
+pages:
+git checkout main
+npm run build
+change all /assets/ to ./assets/
+git commit
+git subtree split --prefix dist -b gh-pages
+git push -f origin gh-pages:gh-pages
+git branch -D gh-pages

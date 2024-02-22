@@ -88,9 +88,9 @@ class GameScene extends Phaser.Scene {
     this.load.image('9', './assets/9.png');
 
     // audio assets
-    this.load.audio('coin', '/assets/sfx_BananaGet.wav');
-    this.load.audio('bgMusic', '/assets/mus_monkeytime_bpm142.wav');
-    this.load.audio('bgMusicSpace', '/assets/mus_deepspacemonkeytime_bpm142.wav');
+    this.load.audio('coin', './assets/sfx_BananaGet.wav');
+    this.load.audio('bgMusic', './assets/mus_monkeytime_bpm142.wav');
+    this.load.audio('bgMusicSpace', './assets/mus_deepspacemonkeytime_bpm142.wav');
     // set preload variables
     this.timeElasped = 0;
   }
