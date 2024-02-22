@@ -11,6 +11,7 @@ const scoreSpan = document.getElementById('score');
 
 var speedDown = 200;
 var difficultyModifier = 0;
+var ready = false;
 
 class GameScene extends Phaser.Scene {
 
@@ -89,6 +90,8 @@ class GameScene extends Phaser.Scene {
 
     // audio assets
     this.load.audio('coin', './assets/sfx_BananaGet.wav');
+    this.load.audio('hurt', './assets/sfx_hurt.wav');
+    this.load.audio('yum', './assets/sfx_yum.wav');
     this.load.audio('bgMusic', './assets/mus_monkeytime_bpm142.wav');
     this.load.audio('bgMusicSpace', './assets/mus_deepspacemonkeytime_bpm142.wav');
     // set preload variables
@@ -99,14 +102,11 @@ class GameScene extends Phaser.Scene {
     this.scene.pause();
 
     this.coinSFX = this.sound.add('coin');
+    this.coinSFX.volume = 0.75;
+    this.hurtSFX = this.sound.add('hurt');
+    this.yumSFX = this.sound.add('yum');
     this.bgMusic = this.sound.add('bgMusic');
     this.bgMusicSpace = this.sound.add('bgMusicSpace');
-    this.bgMusic.play();
-    this.bgMusic.volume = 0.8;
-    this.bgMusic.loop = true;
-    this.bgMusicSpace.play();
-    this.bgMusicSpace.volume = 0;
-    this.bgMusicSpace.loop = true;
 
     //background
     for (var i = 0; i < 50; i++) {
@@ -218,6 +218,12 @@ class GameScene extends Phaser.Scene {
         }
       },
     });
+
+    // at the end of create function, un-disable the html start buttons
+    gameEasyButton.disabled = false;
+    gameMediumButton.disabled = false;
+    gameHardButton.disabled = false;
+    ready = true;
   }
   // update game state
   update(){
@@ -225,6 +231,15 @@ class GameScene extends Phaser.Scene {
     if (!this.scene.isPaused('scene-game') && this.started == false){
       this.startTime = Math.floor(this.time.now / 1000);
       this.started = true;
+      
+      this.bgMusic.play();
+      this.bgMusicSpace.play();
+
+      this.bgMusic.volume = 0.8;
+      this.bgMusicSpace.volume = 0;
+
+      this.bgMusic.loop = true;
+      this.bgMusicSpace.loop = true;
     }
     // update timer + score
     this.timeElasped = Math.floor(this.time.now / 1000) - this.startTime;
@@ -281,12 +296,14 @@ class GameScene extends Phaser.Scene {
     }
     // coconut
     else if (this.target.value < 0) {
+      this.hurtSFX.play();
       this.emitterCoconut.start();
       this.lives--;
       this.UpdateHeartDisplay();
     }
     // pinapple
     else {
+      this.yumSFX.play();
       this.emitterHeart.start();
       this.lives++;
       this.UpdateHeartDisplay();
@@ -370,7 +387,7 @@ class GameScene extends Phaser.Scene {
     }
     // set 
     for (var i = 0; i < this.lives; i++) {
-      let heart = this.add.image(900, 100 + (i * 120), 'heart').setDisplaySize(100, 100)
+      let heart = this.add.image(920, 80 + (i * 100), 'heart').setDisplaySize(100, 80)
       //add to list
       this.heartImageList.push(heart);
     }
@@ -431,18 +448,21 @@ const config = {
 const game = new Phaser.Game(config)
 
 gameEasyButton.addEventListener('click', () => {
+  if(!ready) return;
   difficultyModifier = 0;
   gameStartDiv.style.display = 'none';
   game.scene.resume('scene-game');
 });
 
 gameMediumButton.addEventListener('click', () => {
+  if(!ready) return;
   difficultyModifier = 1;
   gameStartDiv.style.display = 'none';
   game.scene.resume('scene-game');
 });
 
 gameHardButton.addEventListener('click', () => {
+  if(!ready) return;
   difficultyModifier = 2;
   gameStartDiv.style.display = 'none';
   game.scene.resume('scene-game');

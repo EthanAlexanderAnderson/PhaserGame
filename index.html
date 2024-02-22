@@ -4,27 +4,26 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="./assets/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Monkey Game</title>
+    <title>Reggie's Climb</title>
   </head>
   <body>
-
-    <header><p>Monkey Game</p></header>
-
     <main>
       <canvas id="gameCanvas"></canvas>
       <div id="gameStart" class="gameUI">
-        <p>Monkey Game</p>
-        <button id="easy">Easy</button>
-        <button id="medium">Medium</button>
-        <button id="hard">Hard</button>
+        <img src="./assets/beach.png" id="titleImage" alt="title background" />
+        <p id="titleHeader">Reggie's Climb</p>
+        <button disabled id="easy">Easy</button>
+        <button disabled id="medium">Medium</button>
+        <button disabled id="hard">Hard</button>
+        <div id="credits">Code by Ethan Anderson --- Art by Maxwell Kelloway --- Audio by Ethan Larose</div>
       </div>
       <div id="gameOver" class="gameUI">
-        <img src="./assets/game_over.png" alt="game_over" />
+        <img src="./assets/game_over.png" class="gameUI" alt="game over background" />
         <p id="gameOverText">Score: <span id="score"></span></p>
       </div>
+      <img src="./assets/instructions.png" id="instructions" alt="instructions" />
     </main>
 
-    <footer>Code by Ethan Anderson --- Art by Maxwell Kelloway --- Audio by Ethan Larose</footer>
     <script type="module" src="./main.js"></script>
 
   </body>

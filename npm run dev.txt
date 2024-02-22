@@ -3,7 +3,7 @@ npm run dev
 pages:
 git checkout main
 npm run build
-change all /assets/ to ./assets/
+change all /assets/ to ./assets/ in html
 git commit
 git subtree split --prefix dist -b gh-pages
 git push -f origin gh-pages:gh-pages

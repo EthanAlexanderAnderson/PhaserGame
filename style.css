@@ -82,5 +82,49 @@ button {
 
 #gameOverText {
   position: absolute;
+  bottom: 0.01em;
+  z-index: 2;
+  font-size: 2em;
+}
+
+#instructions {
+  width: 1005px;
+  height: 100px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, 550%);
+  background-color: var(--primaryColor);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 2;
+  font-size: 2em;
+}
+
+#credits {
+  position: absolute;
   bottom: 1em;
+  right: 1em;
+  font-size: 0.8em;
+}
+
+#titleImage {
+  position: absolute;
+  z-index: -2;
+  object-fit: cover;
+  height: 1000px;
+  width: 1000px;
+  object-position: 0 100%;
+}
+
+#titleHeader {
+  font-size: 3em;
+}
+
+* {
+  color: black;
+  font-family: Papyrus;
+  text-shadow: #ffffff 2px 2px 2px;
 }
