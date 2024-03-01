@@ -21,7 +21,10 @@ class GameScene extends Phaser.Scene {
     this.player
     this.bg
     this.cursor
-    this.target
+    this.target1
+    this.target2
+    this.target3
+    this.targetList = [this.target1, this.target2, this.target3];
     this.points = 0;
     this.lives = 3;
     this.textTime
@@ -34,8 +37,7 @@ class GameScene extends Phaser.Scene {
     this.emitterCoconut
     this.moveCooldown
     this.spawnLocations = [300, 700];
-    this.monkeyleft = 375;
-    this.monkeyright = 625;
+    this.monkeyLocations = [];
     this.startTime = 0;
     this.started = false;
     this.skylist = [];
@@ -54,6 +56,7 @@ class GameScene extends Phaser.Scene {
     this.load.image('bunch', './assets/bunch.png');
     this.load.image('pineapple', './assets/pineapple.png');
     this.load.image('coconut', './assets/coconut.png');
+    this.load.image('anvil', './assets/anvil.png');
     this.load.image('anger', './assets/anger.png');
     this.load.image('heart', './assets/heart.png');
 
@@ -109,7 +112,7 @@ class GameScene extends Phaser.Scene {
     this.bgMusicSpace = this.sound.add('bgMusicSpace');
 
     //background
-    for (var i = 0; i < 50; i++) {
+    for (var i = 0; i < 40; i++) {
       let img = 'sky';
       if (i == 0) {
         img = 'beach';
@@ -117,44 +120,46 @@ class GameScene extends Phaser.Scene {
       else if (i == 1) {
         img = 'sky_trans';
       }
-      else if (i == 25) {
+      else if (i == 20) {
         img = 'space_trans';
       } 
-      else if (i > 25 && i % 2 == 0) {
+      else if (i > 20 && i % 2 == 0) {
         img = 'space_1';
       }
-      else if (i > 25 && i % 2 != 0) {
+      else if (i > 20 && i % 2 != 0) {
         img = 'space_2';
       }
       let bg = this.add.image(500, 695 * (-i+1), img).setDisplaySize(1000, 700);
+      bg.setDepth(-999);
       this.skylist.push(bg);
     }
 
     // player
-    this.player = this.physics.add.image(this.monkeyleft, 750, 'F1').setDisplaySize(500 , 500);
+    this.player = this.physics.add.image(this.monkeyLocations[0], 750, 'F1').setDisplaySize(500, 500);
     this.player.setTexture('F1');
     this.player.setImmovable(true);
     this.player.body.setAllowGravity(false);
     this.player.setCollideWorldBounds(true);
     this.player.setSize(425, 425);
-
-    // tree
-    for (var i = 0; i < 50; i++) {
-      let tree = this.add.image(500, 1000 * (-i+1), 'tree').setDisplaySize(60, 1000);
-      this.treelist.push(tree);
-    }
-
     // player hands 
-    this.hands = this.add.image(this.monkeyleft, 750, 'H1').setDisplaySize(500 , 500);
+    this.hands = this.add.image(this.monkeyLocations[0], 750, 'H1').setDisplaySize(500 , 500).setDepth(2);
 
     // banana / coconut
+    this.target1 = this.physics.add.image(this.spawnLocations[1], -100, 'banana').setDepth(1);
+    this.target1.value = 10;
+    this.physics.add.overlap(this.player, this.target1, () => this.TargetHit(0), null, this);
 
-    this.target = this.physics.add.image(0, -100, 'banana').setDisplaySize(100, 100);
-    this.target.x = this.monkeyleft;
-    this.target.value = 10;
+    this.target2 = this.physics.add.image(this.spawnLocations[0], -500 , 'banana').setDepth(1);
+    this.target2.value = 10;
+    this.physics.add.overlap(this.player, this.target2, () => this.TargetHit(1), null, this);
 
-    this.physics.add.overlap(this.player, this.target, this.TargetHit, null, this);
+    this.target3 = this.physics.add.image(this.spawnLocations[1], -900, 'banana').setDepth(1);
+    this.target3.value = 10;
+    this.physics.add.overlap(this.player, this.target3, () => this.TargetHit(2), null, this);
 
+    this.targetList = [this.target1, this.target2, this.target3];
+
+    // extra variables
     this.cursor = this.input.keyboard.createCursorKeys();
 
     this.heartImageList = [];
@@ -165,6 +170,7 @@ class GameScene extends Phaser.Scene {
 
     this.moveCooldown = null;
 
+    // particle effects
     this.emitterBanana = this.add.particles(85, -50, 'banana',{
       speed: 200,
       gravityY: 300,
@@ -174,6 +180,7 @@ class GameScene extends Phaser.Scene {
       lifespan: 4000,
     });
     this.emitterBanana.startFollow(this.player);
+    this.emitterBanana.setDepth(999);
 
     this.emitterCoconut = this.add.particles(85, -50, 'anger',{
       speed: 200,
@@ -184,6 +191,7 @@ class GameScene extends Phaser.Scene {
       lifespan: 4000,
     });
     this.emitterCoconut.startFollow(this.player);
+    this.emitterCoconut.setDepth(999);
 
     this.emitterHeart = this.add.particles(85, -50, 'heart',{
       speed: 200,
@@ -194,6 +202,7 @@ class GameScene extends Phaser.Scene {
       lifespan: 4000,
     });
     this.emitterHeart.startFollow(this.player);
+    this.emitterHeart.setDepth(999);
 
     this.UpdateHeartDisplay();
 
@@ -229,6 +238,8 @@ class GameScene extends Phaser.Scene {
   update(){
     // start timer
     if (!this.scene.isPaused('scene-game') && this.started == false){
+      this.DifficultyBasedSetup();
+
       this.startTime = Math.floor(this.time.now / 1000);
       this.started = true;
       
@@ -243,12 +254,16 @@ class GameScene extends Phaser.Scene {
     }
     // update timer + score
     this.timeElasped = Math.floor(this.time.now / 1000) - this.startTime;
-    speedDown = 200 + (this.timeElasped * 10) + (200 * difficultyModifier);
+    if (speedDown < 1000) {
+      speedDown = 200 + (this.timeElasped * 10);
+    } else {
+      speedDown = 1000 + ((this.timeElasped - 80) * 5);
+    }
     // set max limit on speed
     if (speedDown > 1500) {
       speedDown = 1500;
     }
-    let score = Math.floor((this.points + (Math.round(this.timeElasped)*0.001*speedDown)));
+    let score = Math.floor((this.points + (Math.floor(this.timeElasped)*0.001*speedDown)));
     this.DisplayScore(score);
     // move bg
     for (var i = 0; i < this.skylist.length; i++) {
@@ -259,9 +274,13 @@ class GameScene extends Phaser.Scene {
     }
     this.distanceTraveled += speedDown / 1000;
 
-    if (this.target.y > 1000) {
-      this.TargetRespawn();
-    } 
+    //console.log(speedDown);
+
+    for (var i = 0; i < 3; i++) {
+      if (this.targetList[i].y > 1100) {
+        this.TargetRespawn(this.targetList[i]);
+      } 
+    }
 
     const{ left, right } = this.cursor;
     // input left arrow
@@ -279,26 +298,86 @@ class GameScene extends Phaser.Scene {
       this.counter = 80;
     }
     // bg music transition
-    if (this.distanceTraveled > 16000 && (this.bgMusic.volume > 0 || this.bgMusicSpace.volume < 0.8)) {
+    if (this.distanceTraveled > 12800 && (this.bgMusic.volume > 0 || this.bgMusicSpace.volume < 0.8)) {
       this.bgMusic.volume -= 0.01;
       this.bgMusicSpace.volume += 0.01;
     }
   }
   // custom functions
-  TargetHit() {
+  DifficultyBasedSetup() {
+    // tree
+    if (difficultyModifier == 0) {
+      for (var i = 0; i < 40; i++) {
+        let tree = this.add.image(500, 1000 * (-i+1), 'tree').setDisplaySize(60, 1000);
+        this.treelist.push(tree);
+      }
+      this.monkeyLocations = [375, 625];
+      this.spawnLocations = [300, 700];
+    }
+    else if (difficultyModifier == 1) {
+      for (var i = 0; i < 40; i++) {
+        let tree = this.add.image(303, 1000 * (-i+1), 'tree').setDisplaySize(40, 1000);
+        this.treelist.push(tree);
+        let tree2 = this.add.image(696, 1000 * (-i+1), 'tree').setDisplaySize(40, 1000);
+        this.treelist.push(tree2);
+      }
+      this.player.setDisplaySize(333, 333);
+      this.hands.setDisplaySize(333, 333);
+      this.monkeyLocations = [225, 378, 618, 775];
+      this.spawnLocations = [210, 396, 593, 800];
+      this.targetList[1].y -= 200;
+    }
+    else {
+      for (var i = 0; i < 40; i++) {
+        let tree = this.add.image(250, 1000 * (-i+1), 'tree').setDisplaySize(20, 1000);
+        this.treelist.push(tree);
+        let tree2 = this.add.image(500, 1000 * (-i+1), 'tree').setDisplaySize(20, 1000);
+        this.treelist.push(tree2);
+        let tree3 = this.add.image(750, 1000 * (-i+1), 'tree').setDisplaySize(20, 1000);
+        this.treelist.push(tree3);
+      }
+      this.player.setDisplaySize(167, 167);
+      this.hands.setDisplaySize(167, 167);
+      this.monkeyLocations = [208, 292, 458, 542, 708, 792];
+      this.spawnLocations = [180, 320, 430, 570, 680, 820];
+    }
+    // items (only 1 extra per difficulty level)
+    for (var i = 0; i < 3; i++) {
+      this.targetList[i].setMaxVelocity(0, 0);
+      let itemSize = (100 / (difficultyModifier+1)) + 20;
+      this.targetList[i].x = this.SpawnLocation();
+      this.targetList[i].setDisplaySize(itemSize, itemSize);
+    }
+    if (difficultyModifier == 0) {
+      this.targetList[0].setMaxVelocity(0, speedDown);
+    } else {
+      this.targetList[0].setMaxVelocity(0, speedDown);
+      this.targetList[1].setMaxVelocity(0, speedDown);
+      this.targetList[2].setMaxVelocity(0, speedDown);
+    }
 
+    //player
+    this.player.x = this.monkeyLocations[0];
+    this.hands.x = this.monkeyLocations[0];
+  }
+
+  TargetHit(n) {
+
+    let targetN = this.targetList[n];
+    
     // banana
-    if (this.target.value > 0) {
+    if (targetN.value > 0) {
       this.coinSFX.play();
       this.emitterBanana.start();
-      this.points += this.target.value;
+      this.points += targetN.value;
       this.DisplayScore(this.points);
     }
-    // coconut
-    else if (this.target.value < 0) {
+    // coconut & anvil
+    else if (targetN.value < 0) {
       this.hurtSFX.play();
       this.emitterCoconut.start();
-      this.lives--;
+      // add the negative value to reduce the lives
+      this.lives += targetN.value;
       this.UpdateHeartDisplay();
     }
     // pinapple
@@ -312,38 +391,63 @@ class GameScene extends Phaser.Scene {
     if (this.lives <= 0) {
       this.GameOver();
     }
-    this.TargetRespawn();
+    this.TargetRespawn(this.targetList[n]);
   }
 
-  TargetRespawn() {
-    this.target.y = -100;
-    this.target.x = this.SpawnLocation();
-    this.target.setMaxVelocity(0, speedDown);
+  TargetRespawn(targetN) {
+    targetN.y = this.targetList.reduce((minY, target) => Math.min(minY, target.y), Infinity) - (200 * (difficultyModifier+1) + (difficultyModifier % 2 * 400));
+    targetN.setMaxVelocity(0, speedDown);
     let rand = Math.random();
 
+    let itemSize = (100 / (difficultyModifier+1)) + 20;
     if ( rand <= (0.5 - 0.15 * difficultyModifier) )
     {
-      this.target.setTexture('banana');
-      this.target.value = 10;
+      targetN.setTexture('banana');
+      targetN.value = 10;
+      targetN.setDisplaySize(itemSize, itemSize);
     } 
     else if ( rand <= (0.6 - 0.18 * difficultyModifier) )
     {
-      this.target.setTexture('bunch');
-      this.target.value = 50;
+      targetN.setTexture('bunch');
+      targetN.value = 50;
+      targetN.setDisplaySize(itemSize + (itemSize*(1/3)), itemSize);
     } 
-    else if ( rand <= (0.65 - 0.2 * difficultyModifier) )
+    else if ( rand <= (0.68 - 0.2 * difficultyModifier) )
     {
-      this.target.setTexture('pineapple');
-      this.target.value = 0;
+      targetN.setTexture('pineapple');
+      targetN.value = 0;
+      targetN.setDisplaySize(itemSize, itemSize*2);
+    }
+    else if ( rand <= 0.35 && difficultyModifier == 2)
+    {
+      targetN.setTexture('anvil');
+      targetN.value = -3;
+      targetN.setDisplaySize(itemSize*3, itemSize*1.5);
+    }
+    else {
+      targetN.setTexture('coconut');
+      targetN.value = -1;
+      targetN.setDisplaySize(itemSize, itemSize);
+    }
+    if (targetN.value == -3) {
+      targetN.x = this.SpawnLocation(0);
+      console.log(targetN.x);
+      if (this.spawnLocations.indexOf(targetN.x) % 2 == 0){
+        targetN.x += 50;
+        console.log('left');
+      } else {
+        targetN.x -= 80;
+        console.log('right ('+ this.spawnLocations.indexOf(targetN.x)+')');
+      }
     } 
     else {
-      this.target.setTexture('coconut');
-      this.target.value = -10;
+      targetN.x = this.SpawnLocation();
     }
   }
 
-  SpawnLocation(){
-    return this.spawnLocations[Math.floor(Math.random() * this.spawnLocations.length)] + Phaser.Math.Between(-50, 50);
+  SpawnLocation(variationMultiplier = 1){
+    let variation = (30 - (difficultyModifier * 10)) * variationMultiplier;
+    return this.spawnLocations[Math.floor(Math.random() * this.spawnLocations.length)] + Phaser.Math.Between(-variation, variation);
   }
 
   GameOver() {
@@ -355,27 +459,51 @@ class GameScene extends Phaser.Scene {
 
   Move(isLeft){
     // input left arrow
+    let emitterOffset = (-40 + difficultyModifier * 10);
     if(isLeft){
+      // if player is not already furthest left
+      if (this.player.x != this.monkeyLocations[0]) {
+        this.player.x = this.monkeyLocations[this.monkeyLocations.indexOf(this.player.x) - 1];
+        this.hands.x = this.monkeyLocations[this.monkeyLocations.indexOf(this.hands.x) - 1];
+      }
+
       // invert image
-      if (this.player.x == this.monkeyright){
+      if (this.monkeyLocations.indexOf(this.player.x) % 2 == 0){
         this.player.setFlipX(false);
         this.hands.setFlipX(false);
-        this.emitterBanana.setX(85);
-        this.emitterCoconut.setX(85);
+        this.emitterBanana.setX(-emitterOffset);
+        this.emitterCoconut.setX(-emitterOffset);
+        this.emitterHeart.setX(-emitterOffset);
+      } else {
+        this.player.setFlipX(true);
+        this.hands.setFlipX(true);
+        this.emitterBanana.setX(emitterOffset);
+        this.emitterCoconut.setX(emitterOffset);
+        this.emitterHeart.setX(emitterOffset);
       }
-      this.player.x = this.monkeyleft;
-      this.hands.x = this.monkeyleft;
     }
     // input right arrow
     else{
-      if (this.player.x == this.monkeyleft){
+      // if player is not already furthest right
+      if (this.player.x != this.monkeyLocations[this.monkeyLocations.length - 1]) {
+        this.player.x = this.monkeyLocations[this.monkeyLocations.indexOf(this.player.x) + 1];
+        this.hands.x = this.monkeyLocations[this.monkeyLocations.indexOf(this.hands.x) + 1];
+      }
+
+      // invert image
+      if (this.monkeyLocations.indexOf(this.player.x) % 2 == 0){
+        this.player.setFlipX(false);
+        this.hands.setFlipX(false);
+        this.emitterBanana.setX(-emitterOffset);
+        this.emitterCoconut.setX(-emitterOffset);
+        this.emitterHeart.setX(-emitterOffset);
+      } else {
         this.player.setFlipX(true);
         this.hands.setFlipX(true);
-        this.emitterBanana.setX(-85);
-        this.emitterCoconut.setX(-85);
+        this.emitterBanana.setX(emitterOffset);
+        this.emitterCoconut.setX(emitterOffset);
+        this.emitterHeart.setX(emitterOffset);
       }
-      this.player.x = this.monkeyright;
-      this.hands.x = this.monkeyright;
     }
     this.moveCooldown = null;
   }
