@@ -49,6 +49,9 @@ class GameScene extends Phaser.Scene {
   }
   // load assets
   preload(){
+    gameEasyButton.disabled = false;
+    gameMediumButton.disabled = false;
+    gameHardButton.disabled = false;
     // sprites
     this.load.image('tree', './assets/Log.png');
     this.load.image('monkey', './assets/monkey.png');
@@ -227,12 +230,8 @@ class GameScene extends Phaser.Scene {
         }
       },
     });
-
-    // at the end of create function, un-disable the html start buttons
-    gameEasyButton.disabled = false;
-    gameMediumButton.disabled = false;
-    gameHardButton.disabled = false;
     ready = true;
+    console.log('preload & create ready');
   }
   // update game state
   update(){
@@ -251,6 +250,7 @@ class GameScene extends Phaser.Scene {
 
       this.bgMusic.loop = true;
       this.bgMusicSpace.loop = true;
+      console.log('game started');
     }
     // update timer + score
     this.timeElasped = Math.floor(this.time.now / 1000) - this.startTime;
@@ -273,8 +273,6 @@ class GameScene extends Phaser.Scene {
       this.treelist[i].y += speedDown / 1000;
     }
     this.distanceTraveled += speedDown / 1000;
-
-    //console.log(speedDown);
 
     for (var i = 0; i < 3; i++) {
       if (this.targetList[i].y > 1100) {
@@ -431,13 +429,10 @@ class GameScene extends Phaser.Scene {
     }
     if (targetN.value == -3) {
       targetN.x = this.SpawnLocation(0);
-      console.log(targetN.x);
       if (this.spawnLocations.indexOf(targetN.x) % 2 == 0){
         targetN.x += 50;
-        console.log('left');
       } else {
         targetN.x -= 80;
-        console.log('right ('+ this.spawnLocations.indexOf(targetN.x)+')');
       }
     } 
     else {
@@ -576,21 +571,30 @@ const config = {
 const game = new Phaser.Game(config)
 
 gameEasyButton.addEventListener('click', () => {
-  if(!ready) return;
+  if(!ready){
+    alert('Loading. Please refresh the page if this takes longer than 1 minute.');
+    return;
+  }
   difficultyModifier = 0;
   gameStartDiv.style.display = 'none';
   game.scene.resume('scene-game');
 });
 
 gameMediumButton.addEventListener('click', () => {
-  if(!ready) return;
+  if(!ready){
+    alert('Loading. Please refresh the page if this takes longer than 1 minute.');
+    return;
+  }
   difficultyModifier = 1;
   gameStartDiv.style.display = 'none';
   game.scene.resume('scene-game');
 });
 
 gameHardButton.addEventListener('click', () => {
-  if(!ready) return;
+  if(!ready){
+    alert('Loading. Please refresh the page if this takes longer than 1 minute.');
+    return;
+  }
   difficultyModifier = 2;
   gameStartDiv.style.display = 'none';
   game.scene.resume('scene-game');
