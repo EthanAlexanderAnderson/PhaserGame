@@ -2,6 +2,7 @@ import './style.css'
 import Phaser from 'phaser'
 import { Swipe } from './swipe.js';
 
+// get HTML elements
 const gameStartDiv = document.getElementById('gameStart');
 const gameEasyButton = document.getElementById('easy');
 const gameMediumButton = document.getElementById('medium');
@@ -9,6 +10,7 @@ const gameHardButton = document.getElementById('hard');
 const gameOverDiv = document.getElementById('gameOver');
 const scoreSpan = document.getElementById('score');
 
+// global variables
 var speedDown = 200;
 var difficultyModifier = 0;
 var ready = false;
@@ -27,7 +29,6 @@ class GameScene extends Phaser.Scene {
     this.targetList = [this.target1, this.target2, this.target3];
     this.points = 0;
     this.lives = 3;
-    this.textTime
     this.timedEvent
     this.timeElasped = 0
     this.coinSFX
@@ -105,8 +106,11 @@ class GameScene extends Phaser.Scene {
   }
  // create game objects
   create(){
+
+    // dont auto play scene
     this.scene.pause();
 
+    // audio
     this.coinSFX = this.sound.add('coin');
     this.coinSFX.volume = 0.75;
     this.hurtSFX = this.sound.add('hurt');
@@ -114,8 +118,8 @@ class GameScene extends Phaser.Scene {
     this.bgMusic = this.sound.add('bgMusic');
     this.bgMusicSpace = this.sound.add('bgMusicSpace');
 
-    //background
-    for (var i = 0; i < 40; i++) {
+    // background
+    for (var i = 0; i < 50; i++) {
       let img = 'sky';
       if (i == 0) {
         img = 'beach';
@@ -147,7 +151,7 @@ class GameScene extends Phaser.Scene {
     // player hands 
     this.hands = this.add.image(this.monkeyLocations[0], 750, 'H1').setDisplaySize(500 , 500).setDepth(2);
 
-    // banana / coconut
+    // falling objects (banana, bunch, coconuts, pineapples, anvils)
     this.target1 = this.physics.add.image(this.spawnLocations[1], -100, 'banana').setDepth(1);
     this.target1.value = 10;
     this.physics.add.overlap(this.player, this.target1, () => this.TargetHit(0), null, this);
@@ -165,12 +169,12 @@ class GameScene extends Phaser.Scene {
     // extra variables
     this.cursor = this.input.keyboard.createCursorKeys();
 
+    // for UI elements
     this.heartImageList = [];
-
     this.scoreImageList = [];
-  
-    this.startTime = 0;
 
+    // game status variables
+    this.startTime = 0;
     this.moveCooldown = null;
 
     // particle effects
@@ -207,8 +211,10 @@ class GameScene extends Phaser.Scene {
     this.emitterHeart.startFollow(this.player);
     this.emitterHeart.setDepth(999);
 
+    // set initial UI heart display
     this.UpdateHeartDisplay();
 
+    // swipe detection
     const swipe = new Swipe(this, {
       swipeDetectedCallback: (direction) => {
         //let angle = 0;
@@ -230,18 +236,20 @@ class GameScene extends Phaser.Scene {
         }
       },
     });
+    // enable buttons
     ready = true;
     console.log('preload & create ready');
   }
   // update game state
   update(){
-    // start timer
+    // start timer, this is all done once
     if (!this.scene.isPaused('scene-game') && this.started == false){
       this.DifficultyBasedSetup();
 
       this.startTime = Math.floor(this.time.now / 1000);
       this.started = true;
       
+      // only play music when game starts
       this.bgMusic.play();
       this.bgMusicSpace.play();
 
@@ -252,19 +260,26 @@ class GameScene extends Phaser.Scene {
       this.bgMusicSpace.loop = true;
       console.log('game started');
     }
-    // update timer + score
+
+    // update timer
     this.timeElasped = Math.floor(this.time.now / 1000) - this.startTime;
+
+    // increase speed
     if (speedDown < 1000) {
       speedDown = 200 + (this.timeElasped * 10);
     } else {
       speedDown = 1000 + ((this.timeElasped - 80) * 5);
     }
+
     // set max limit on speed
     if (speedDown > 1500) {
       speedDown = 1500;
     }
+
+    // update score
     let score = Math.floor((this.points + (Math.floor(this.timeElasped)*0.001*speedDown)));
     this.DisplayScore(score);
+    
     // move bg
     for (var i = 0; i < this.skylist.length; i++) {
       this.skylist[i].y += speedDown / 1000;
@@ -272,14 +287,18 @@ class GameScene extends Phaser.Scene {
     for (var i = 0; i < this.treelist.length; i++) {
       this.treelist[i].y += speedDown / 1000;
     }
+
+    // update distance traveled
     this.distanceTraveled += speedDown / 1000;
 
+    // check if target is off screen and respawn
     for (var i = 0; i < 3; i++) {
       if (this.targetList[i].y > 1100) {
         this.TargetRespawn(this.targetList[i]);
       } 
     }
 
+    // input
     const{ left, right } = this.cursor;
     // input left arrow
     if(left.isDown && !this.moveCooldown){
@@ -289,44 +308,55 @@ class GameScene extends Phaser.Scene {
     else if(right.isDown && !this.moveCooldown){
       this.moveCooldown = this.time.delayedCall(100, this.move, [false], this);
     }
+
     // animation
     this.counter--;
     if(this.counter < speedDown / 40){
       this.ChangeFrame();
       this.counter = 80;
     }
-    // bg music transition
+
+    // bg music transition to space music
     if (this.distanceTraveled > 12800 && (this.bgMusic.volume > 0 || this.bgMusicSpace.volume < 0.8)) {
       this.bgMusic.volume -= 0.01;
       this.bgMusicSpace.volume += 0.01;
     }
   }
   // custom functions
+
+  // set up game based on difficulty
   DifficultyBasedSetup() {
-    // tree
+    // EASY
     if (difficultyModifier == 0) {
+      // trees
       for (var i = 0; i < 40; i++) {
         let tree = this.add.image(500, 1000 * (-i+1), 'tree').setDisplaySize(60, 1000);
         this.treelist.push(tree);
       }
+      // player & item locations
       this.monkeyLocations = [375, 625];
       this.spawnLocations = [300, 700];
     }
+    // MEDIUM
     else if (difficultyModifier == 1) {
       for (var i = 0; i < 40; i++) {
+        // trees
         let tree = this.add.image(303, 1000 * (-i+1), 'tree').setDisplaySize(40, 1000);
         this.treelist.push(tree);
         let tree2 = this.add.image(696, 1000 * (-i+1), 'tree').setDisplaySize(40, 1000);
         this.treelist.push(tree2);
       }
+      // player & item locations & sizes
       this.player.setDisplaySize(333, 333);
       this.hands.setDisplaySize(333, 333);
       this.monkeyLocations = [225, 378, 618, 775];
       this.spawnLocations = [210, 396, 593, 800];
       this.targetList[1].y -= 200;
     }
+    // HARD
     else {
       for (var i = 0; i < 40; i++) {
+        // trees
         let tree = this.add.image(250, 1000 * (-i+1), 'tree').setDisplaySize(20, 1000);
         this.treelist.push(tree);
         let tree2 = this.add.image(500, 1000 * (-i+1), 'tree').setDisplaySize(20, 1000);
@@ -334,12 +364,13 @@ class GameScene extends Phaser.Scene {
         let tree3 = this.add.image(750, 1000 * (-i+1), 'tree').setDisplaySize(20, 1000);
         this.treelist.push(tree3);
       }
+      // player & item locations & sizes
       this.player.setDisplaySize(167, 167);
       this.hands.setDisplaySize(167, 167);
       this.monkeyLocations = [208, 292, 458, 542, 708, 792];
       this.spawnLocations = [180, 320, 430, 570, 680, 820];
     }
-    // items (only 1 extra per difficulty level)
+    // enable / disable items based on difficulty
     for (var i = 0; i < 3; i++) {
       this.targetList[i].setMaxVelocity(0, 0);
       let itemSize = (100 / (difficultyModifier+1)) + 20;
@@ -354,11 +385,12 @@ class GameScene extends Phaser.Scene {
       this.targetList[2].setMaxVelocity(0, speedDown);
     }
 
-    //player
+    // set player location
     this.player.x = this.monkeyLocations[0];
     this.hands.x = this.monkeyLocations[0];
   }
 
+  // when player collides with item
   TargetHit(n) {
 
     let targetN = this.targetList[n];
@@ -392,41 +424,51 @@ class GameScene extends Phaser.Scene {
     this.TargetRespawn(this.targetList[n]);
   }
 
+  // respawn item at top of screen when it goes off the bottom of the screen or is touched by player
   TargetRespawn(targetN) {
+    // ensure item spawns well above the current highest item
     targetN.y = this.targetList.reduce((minY, target) => Math.min(minY, target.y), Infinity) - (200 * (difficultyModifier+1) + (difficultyModifier % 2 * 400));
     targetN.setMaxVelocity(0, speedDown);
+
+    // randomize item type
     let rand = Math.random();
 
     let itemSize = (100 / (difficultyModifier+1)) + 20;
+    // banana
     if ( rand <= (0.5 - 0.15 * difficultyModifier) )
     {
       targetN.setTexture('banana');
       targetN.value = 10;
       targetN.setDisplaySize(itemSize, itemSize);
-    } 
+    }
+    // bunch
     else if ( rand <= (0.6 - 0.18 * difficultyModifier) )
     {
       targetN.setTexture('bunch');
       targetN.value = 50;
       targetN.setDisplaySize(itemSize + (itemSize*(1/3)), itemSize);
-    } 
+    }
+    // pineapple
     else if ( rand <= (0.68 - 0.2 * difficultyModifier) )
     {
       targetN.setTexture('pineapple');
       targetN.value = 0;
       targetN.setDisplaySize(itemSize, itemSize*2);
     }
+    // anvil
     else if ( rand <= 0.35 && difficultyModifier == 2)
     {
       targetN.setTexture('anvil');
       targetN.value = -3;
       targetN.setDisplaySize(itemSize*3, itemSize*1.5);
     }
+    // coconut
     else {
       targetN.setTexture('coconut');
       targetN.value = -1;
       targetN.setDisplaySize(itemSize, itemSize);
     }
+    // if anvil, spawn in middle of the tree
     if (targetN.value == -3) {
       targetN.x = this.SpawnLocation(0);
       if (this.spawnLocations.indexOf(targetN.x) % 2 == 0){
@@ -434,17 +476,20 @@ class GameScene extends Phaser.Scene {
       } else {
         targetN.x -= 80;
       }
-    } 
+    }
+    // else spawn normally, either left or right of a tree
     else {
       targetN.x = this.SpawnLocation();
     }
   }
 
+  // return a random spawn location for items
   SpawnLocation(variationMultiplier = 1){
     let variation = (30 - (difficultyModifier * 10)) * variationMultiplier;
     return this.spawnLocations[Math.floor(Math.random() * this.spawnLocations.length)] + Phaser.Math.Between(-variation, variation);
   }
 
+  // game over
   GameOver() {
     this.sys.game.destroy(true);
 
@@ -452,6 +497,7 @@ class GameScene extends Phaser.Scene {
     scoreSpan.innerHTML = this.points;
   }
 
+  // move player left or right
   Move(isLeft){
     // input left arrow
     let emitterOffset = (-40 + difficultyModifier * 10);
@@ -462,7 +508,7 @@ class GameScene extends Phaser.Scene {
         this.hands.x = this.monkeyLocations[this.monkeyLocations.indexOf(this.hands.x) - 1];
       }
 
-      // invert image
+      // invert Reggie image
       if (this.monkeyLocations.indexOf(this.player.x) % 2 == 0){
         this.player.setFlipX(false);
         this.hands.setFlipX(false);
@@ -485,7 +531,7 @@ class GameScene extends Phaser.Scene {
         this.hands.x = this.monkeyLocations[this.monkeyLocations.indexOf(this.hands.x) + 1];
       }
 
-      // invert image
+      // invert Reggie image
       if (this.monkeyLocations.indexOf(this.player.x) % 2 == 0){
         this.player.setFlipX(false);
         this.hands.setFlipX(false);
@@ -503,12 +549,13 @@ class GameScene extends Phaser.Scene {
     this.moveCooldown = null;
   }
 
+  // update heart display with current lives
   UpdateHeartDisplay() {
     // remove prior hearts
     for (var i = 0; i < this.heartImageList.length; i++) {
       this.heartImageList[i].destroy();
     }
-    // set 
+    // set new hearts
     for (var i = 0; i < this.lives; i++) {
       let heart = this.add.image(920, 80 + (i * 100), 'heart').setDisplaySize(100, 80)
       //add to list
@@ -516,6 +563,7 @@ class GameScene extends Phaser.Scene {
     }
   }
 
+  // change animation frame for Reggie
   ChangeFrame() {
     if (this.frame == 1) {
       this.player.setTexture('F2');
@@ -539,12 +587,13 @@ class GameScene extends Phaser.Scene {
     }
   }
 
+  // display score using custom number font
   DisplayScore(score) {
-    // remove prior hearts
+    // remove prior score text images
     for (var i = 0; i < this.scoreImageList.length; i++) {
       this.scoreImageList[i].destroy();
     }
-    // set 
+    // set new score
     score = score.toString();
     for (var i = 0; i < score.length; i++) {
       let digit = this.add.image(80 + (i * 100), 100, score[i]).setDisplaySize(80, 130)
@@ -554,6 +603,7 @@ class GameScene extends Phaser.Scene {
   }
 }
 
+// game config
 const config = {
   type: Phaser.WEBGL,
   width: 1000,
@@ -570,6 +620,7 @@ const config = {
 
 const game = new Phaser.Game(config)
 
+// event listeners for game start buttons
 gameEasyButton.addEventListener('click', () => {
   if(!ready){
     alert('Loading. Please wait a few seconds and try again.');
