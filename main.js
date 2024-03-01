@@ -572,7 +572,7 @@ const game = new Phaser.Game(config)
 
 gameEasyButton.addEventListener('click', () => {
   if(!ready){
-    alert('Loading. Please refresh the page if this takes longer than 1 minute.');
+    alert('Loading. Please wait a few seconds and try again.');
     return;
   }
   difficultyModifier = 0;
@@ -582,7 +582,7 @@ gameEasyButton.addEventListener('click', () => {
 
 gameMediumButton.addEventListener('click', () => {
   if(!ready){
-    alert('Loading. Please refresh the page if this takes longer than 1 minute.');
+    alert('Loading. Please wait a few seconds and try again.');
     return;
   }
   difficultyModifier = 1;
@@ -592,7 +592,7 @@ gameMediumButton.addEventListener('click', () => {
 
 gameHardButton.addEventListener('click', () => {
   if(!ready){
-    alert('Loading. Please refresh the page if this takes longer than 1 minute.');
+    alert('Loading. Please wait a few seconds and try again.');
     return;
   }
   difficultyModifier = 2;
